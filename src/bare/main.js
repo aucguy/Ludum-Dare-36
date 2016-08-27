@@ -65,7 +65,7 @@ base.registerModule('main', function() {
         this.main.sounds[names[i]] = this.main.game.sound.add(names[i]);
       }
 
-      this.main.game.stage.backgroundColor = '#FFFFFF';
+      this.main.game.stage.backgroundColor = '#F0F0F0';
       var arrowKeys = [
         Phaser.KeyCode.LEFT,
         Phaser.KeyCode.RIGHT,

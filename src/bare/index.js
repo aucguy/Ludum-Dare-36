@@ -5,6 +5,12 @@ var base = base || {};
 
   base.indexFunc = function indexFunc(state) {
     var assets = [
+      ['image/fireOverlay',   'assets/image/fireOverlay.png', 'spritesheet', {
+        frameWidth: 16,
+        frameHeight: 16,
+        pixelated: true
+      }],
+      ['tilemap/test',        'assets/tilemap/test.json',     'json']
     ];
     //#mode dev
     base.loadAssets(assets.concat([
@@ -34,24 +40,24 @@ var base = base || {};
     logo.src = 'assets/image/logo.svg';
   };
   base.renderLoadingScreen = function(canvasID, loading, loaded) {
-    if(logoLoaded) {
-      var display = document.getElementById(canvasID);
-      if(display === null) return;
-      var context = display.getContext('2d');
-      if(context === null) return;
-      var width = context.canvas.width;
-      var height = context.canvas.height;
+    var display = document.getElementById(canvasID);
+    if(display === null) return;
+    var context = display.getContext('2d');
+    if(context === null) return;
+    var width = context.canvas.width;
+    var height = context.canvas.height;
 
-      context.fillStyle = '#FFFFFF';
-      context.fillRect(0, 0, width, height);
+    context.fillStyle = '#FFFFFF';
+    context.fillRect(0, 0, width, height);
+    if(logoLoaded) {
       context.drawImage(logo, (width - logo.width) / 2, (height - logo.height) / 2);
-      context.fillStyle = '#000000';
-      context.beginPath();
-      context.rect(20, height - 40, width - 40, 20);
-      context.stroke();
-      context.beginPath();
-      context.rect(20, height - 40, (loaded / (loaded + loading)) * (width - 40), 20);
-      context.fill();
     }
+    context.fillStyle = '#000000';
+    context.beginPath();
+    context.rect(20, height - 40, width - 40, 20);
+    context.stroke();
+    context.beginPath();
+    context.rect(20, height - 40, (loaded / (loaded + loading)) * (width - 40), 20);
+    context.fill();
   };
 })();
