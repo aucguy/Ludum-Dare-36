@@ -25,7 +25,9 @@ var base = base || {};
       ['scripts/main',        'src/bare/main.js',             'script'],
       ['scripts/gui',         'src/bare/gui.js',              'script'],
       ['scripts/util',        'src/bare/util.js',             'script'],
-      ['scripts/app',         'src/app.js',                   'script']
+      ['scripts/app',         'src/app.js',                   'script'],
+      ['scripts/fire',        'src/fire.js',                  'script'],
+      ['scripts/common',      'src/common.js',                'script']
     ]));
     //#mode none
     //#mode rel

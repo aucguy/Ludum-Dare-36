@@ -75,18 +75,6 @@ base.registerModule('util', function() {
   }
   var create_ = create;
 
-  var Contextual = extend(Object, 'Contextual', {
-    constructor: function Contextual() {
-      if(this.context === undefined) {
-        this.context = {};
-      }
-    },
-    create: function create(constructor) {
-      return create_(constructor, Object.create(this.context),
-          Array.prototype.slice.call(arguments, 1));
-    }
-  });
-
   function contextAttr(proto, name) {
     Object.defineProperty(proto, name, {
       get: new Function("return this.context." + name + ";"),
@@ -95,6 +83,21 @@ base.registerModule('util', function() {
   }
   contextAttr.__factoryAttr__ = true;
 
+  
+  var Contextual = extend(Object, 'Contextual', {
+    constructor: function Contextual() {
+      if(this.context === undefined) {
+        this.context = {};
+      }
+    },
+    create: function create(constructor) {
+      var ctx = Object.create(this.context);
+      ctx.parent = this;
+      return create_(constructor, ctx, Array.prototype.slice.call(arguments, 1));
+    },
+    parent: contextAttr
+  });
+  
   function contextValue(value) {
     function factory(proto, name) {
       proto[name] = value;
