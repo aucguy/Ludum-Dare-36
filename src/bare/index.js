@@ -10,7 +10,8 @@ var base = base || {};
         frameHeight: 16,
         pixelated: true
       }],
-      ['tilemap/test',        'assets/tilemap/test.json',     'json']
+      ['tilemap/test',        'assets/tilemap/test.json',     'json'],
+      ['tilemap/flame',       'assets/tilemap/flame.json',    'json']
     ];
     //#mode dev
     base.loadAssets(assets.concat([
