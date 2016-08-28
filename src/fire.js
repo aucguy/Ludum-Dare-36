@@ -15,7 +15,7 @@ base.registerModule('fire', function() {
       this.flameSprite.alpha = 0.9;
       
       this.group = this.game.add.group(undefined, 'fire');
-      this.terrain = this.create(Terrain, this.game.width / 2, this.game.height / 2, 'tilemap/terrain');
+      //this.terrain = this.create(Terrain, this.game.width / 2, this.game.height / 2, 'tilemap/terrain');
       this.mouseBody = this.game.physics.p2.createBody(0, 0, 0, true);
       
       this.game.input.addMoveCallback(function(pointer) {
@@ -95,7 +95,7 @@ base.registerModule('fire', function() {
   });
   
   var Physical = util.extend(common.PlayContext, 'Physical', {
-    constructor: function Physical(x, y, tilemapKey, parent) {
+    constructor: function Physical(x, y, tilemapKey, imageKey, parent) {
       parent = parent || this.parent.group;
       this.constructor$PlayContext();
       this.dirty = false;
@@ -107,10 +107,12 @@ base.registerModule('fire', function() {
       this.mapwidth = tilemap.width;
       this.mapheight = tilemap.height;
       this.tilemapData = new Uint8Array(tilemap.layers[0].data);
+      this.templateImage = this.top.cache.getImage(imageKey);
       
-      this.texture = this.game.add.renderTexture(tilemap.width * tilemap.tilewidth, tilemap.height * tilemap.tileheight);
+      this.texture = util.createBitmap(this.game, tilemap.width * tilemap.tilewidth, tilemap.height * tilemap.tileheight);
       this.sprite = this.game.add.sprite(0, 0, this.texture, undefined, parent);
       this.game.physics.p2.enable(this.sprite);
+      this.sprite.body.debug = true;
       
       this.refresh(true);
       this.sprite.body.reset(x, y);
@@ -121,22 +123,14 @@ base.registerModule('fire', function() {
     setTile: function setTile(x, y, value) {
       if(this.getTile(x, y) != value) {
         this.tilemapData[y * this.mapwidth + x] = value;
-        if(value == 0) {
-          this.dirty = true;
-        } else {
-          var tile = this.game.add.sprite(0, 0, 'image/fireOverlay', value - 1);
-          this.texture.renderXY(tile, x * this.tilewidth, y * this.tileheight, false);
-          tile.parent.remove(tile);
-        }
+        this.dirty = true;
       }
     },
     refresh: function refresh(force) {
       if(!force && !this.dirty) return;
       
-      var tile = this.game.add.sprite(0, 0, 'image/fireOverlay', 1);
-      tile.visible = false;
-      this.texture.renderXY(tile, 0, 0, true);
-      tile.visible = true;
+      this.texture.ctx.drawImage(this.templateImage, 0, 0);
+      this.texture.dirty = true;
       this.sprite.body.clearShapes();
       this.dead = true;
       
@@ -146,8 +140,6 @@ base.registerModule('fire', function() {
         for(var x=0; x<this.mapwidth; x++) {
           var index = this.tilemapData[i++];
           if(index) {
-            tile.frame = index - 1;
-            this.texture.renderXY(tile, x * this.tilewidth, y * this.tileheight, false);
             this.dead = false;
             
             var rect = {
@@ -185,6 +177,8 @@ base.registerModule('fire', function() {
               }
             }
             rects.push(rect);
+          } else {
+            this.texture.ctx.clearRect(x * this.tilewidth, y * this.tileheight, this.tilewidth, this.tileheight);
           }
         }
       }
@@ -198,14 +192,13 @@ base.registerModule('fire', function() {
               (centerX - this.mapwidth  / 2) * this.tilewidth, 
               (centerY - this.mapheight / 2) * this.tileheight);
       }
-      tile.parent.remove(tile);
       this.dirty = false;
     },
   })
   
   var Burnable = util.extend(Physical, 'Burnable', {
-    constructor: function Burnable(x, y, tilemapKey) {
-      this.constructor$Physical(x, y, tilemapKey);
+    constructor: function Burnable(x, y, tilemapKey, imageKey) {
+      this.constructor$Physical(x, y, tilemapKey, imageKey);
       this.goesOut = true;
       this.catchesFire = true;
       this.cooks = false;
@@ -266,7 +259,7 @@ base.registerModule('fire', function() {
     },
     kill: function kill() {
       this.onUpdate.remove(this.update, this);
-      this.sprite.kill();
+      this.sprite.destroy();
     },
     value: function value() {
       return 0;
@@ -303,7 +296,7 @@ base.registerModule('fire', function() {
   
   var Flame = util.extend(Burnable, 'Flame', {
     constructor: function Flame(x, y) {
-      this.constructor$Burnable(x, y, 'tilemap/flame');
+      this.constructor$Burnable(x, y, 'tilemap/flame', 'image/log');
       this.goesOut = false;
     }
   });

@@ -16,6 +16,7 @@ var base = base || {};
         pixelated: true
       }],
       ['image/fireParticle',  'assets/image/fireParticle.png','image'],
+      ['image/log',           'assets/image/log.png',         'image'],
       
       ['tilemap/test',        'assets/tilemap/test.json',     'json'],
       ['tilemap/flame',       'assets/tilemap/flame.json',    'json'],

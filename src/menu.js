@@ -31,13 +31,15 @@ base.registerModule('menu', function() {
       
       for(var i=0; i<3; i++) {
         this.clickCallbacks[['wood0', 'wood1', 'food0'][i]] = (function() {
-          var clazz, tilemapKey;
+          var clazz, tilemapKey, imageKey;
           if(i == 0) {
             clazz = fire.Burnable;
             tilemapKey = 'tilemap/test';
+            imageKey = 'image/log';
           } else if(i == 1) {
             clazz = fire.Flame;
             tilemapKey = undefined;
+            imageKey = undefined;
           } else if(i == 2) {
             clazz = fire.Food;
             tilemapKey = 'tilemap/hotdog';
@@ -45,7 +47,7 @@ base.registerModule('menu', function() {
           return function() {
             var x = this.game.input.position.x;
             var y = this.game.input.position.y;
-            var burnable = this.fire.create(clazz, x, y, tilemapKey);
+            var burnable = this.fire.create(clazz, x, y, tilemapKey, imageKey);
             var cost = burnable.cost();
             this.fire.addBurnable(burnable);
             if(this.top.money >= cost) {
