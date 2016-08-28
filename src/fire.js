@@ -7,8 +7,8 @@ base.registerModule('fire', function() {
       this.constructor$PlayContext();
       this.burnables = [];
       this.group = this.game.add.group(undefined, 'fire');
-      this.burnables.push(this.create$PlayContext(Burnable, 'tilemap/test'));
-      this.burnables.push(this.create$PlayContext(Flame));
+      this.burnables.push(this.create(Burnable, 'tilemap/test'));
+      this.burnables.push(this.create(Flame));
       this.mouseBody = this.game.physics.p2.createBody(0, 0, 0, true);
       
       this.game.input.addMoveCallback(function(pointer) {
@@ -16,13 +16,16 @@ base.registerModule('fire', function() {
       }, this)
       
       this.game.input.onDown.add(function(pointer) {
-        var bodies = this.collideBurnables(pointer.position);
-        if(bodies.length > 0) {
-          var body = bodies[0];
-          var local = [0, 0];
-          body.toLocalFrame(local, [this.game.physics.p2.pxmi(pointer.position.x), this.game.physics.p2.pxmi(pointer.position.y)]);
-          local = [this.game.physics.p2.mpxi(local[0]), this.game.physics.p2.mpxi(local[1])];
-          this.selectionConstraint = this.game.physics.p2.createLockConstraint(this.mouseBody, body, local);
+        this.top.playMenu.onClick(pointer);
+        if(!this.top.playMenu.menuClicked) {
+          var bodies = this.collideBurnables(pointer.position);
+          if(bodies.length > 0) {
+            var body = bodies[0];
+            var local = [0, 0];
+            body.toLocalFrame(local, [this.game.physics.p2.pxmi(pointer.position.x), this.game.physics.p2.pxmi(pointer.position.y)]);
+            local = [this.game.physics.p2.mpxi(local[0]), this.game.physics.p2.mpxi(local[1])];
+            this.selectionConstraint = this.game.physics.p2.createLockConstraint(this.mouseBody, body, local);
+          }
         }
       }, this);
       this.game.input.onUp.add(function() {
@@ -36,6 +39,7 @@ base.registerModule('fire', function() {
       });
       for(var i=0; i<deadChildren.length; i++) {
         deadChildren[i].kill();
+        this.burnables.splice(this.burnables.indexOf(deadChildren[i]), 1);
       }
     },
     getBurnableBodies: function getBurnableBodies() {
@@ -45,6 +49,9 @@ base.registerModule('fire', function() {
     },
     collideBurnables: function getBurnableCollisions(point) {
       return this.game.physics.p2.hitTest(point, this.getBurnableBodies());
+    },
+    addBurnable: function addBurnable() {
+      this.burnables.push(this.create.apply(this, arguments));
     }
   });
   
@@ -75,8 +82,16 @@ base.registerModule('fire', function() {
       return this.tilemapData[y * this.mapwidth + x];
     },
     setTile: function setTile(x, y, value) {
-      this.tilemapData[y * this.mapwidth + x] = value;
-      this.dirty = true;
+      if(this.getTile(x, y) != value) {
+        this.tilemapData[y * this.mapwidth + x] = value;
+        if(value == 0) {
+          this.dirty = true;
+        } else {
+          var tile = this.game.add.sprite(0, 0, 'image/fireOverlay', value - 1);
+          this.texture.renderXY(tile, x * this.tilewidth, y * this.tileheight, false);
+          tile.parent.remove(tile);
+        }
+      }
     },
     refresh: function refresh(force) {
       if(!force && !this.dirty) return;
@@ -89,18 +104,62 @@ base.registerModule('fire', function() {
       this.dead = true;
       
       var i = 0;
+      var rects = [];
       for(var y=0; y<this.mapheight; y++) {
         for(var x=0; x<this.mapwidth; x++) {
           var index = this.tilemapData[i++];
           if(index) {
             tile.frame = index - 1;
             this.texture.renderXY(tile, x * this.tilewidth, y * this.tileheight, false);
-            this.sprite.body.addRectangle(this.tilewidth, this.tileheight, 
-              (x - this.mapwidth  / 2 + 0.5) * this.tilewidth, 
-              (y - this.mapheight / 2 + 0.5) * this.tileheight);
             this.dead = false;
+            
+            var rect = {
+              x: x,
+              y: y,
+              width: 1,
+              height: 1
+            }
+            //the following is what I think the antichamber block algorithm might be doing
+            //refer to the room where one can the digitalized boxes
+            var joined = true;
+            var everJoined = false;
+            while(joined) {
+              joined = false;
+              for(var k=0; k<rects.length; k++) {
+                var other = rects[k];
+                if(rect.height == other.height && rect.y == other.y && 
+                    (rect.x + rect.width == other.x || other.x + other.width == rect.x)) {
+                  other.x = Math.min(rect.x, other.x);
+                  other.width = rect.width + other.width;
+                  rect = other;
+                  joined = true;
+                } else if(rect.width == other.width && rect.x == other.x &&
+                    (rect.y + rect.height == other.y || other.y + other.height == rect.y)) {
+                  other.y = Math.min(rect.y, other.y);
+                  other.height = rect.height + other.height;
+                  rect = other;
+                  joined = true;
+                }
+                if(joined) {
+                  everJoined = true;
+                  rects.splice(rects.indexOf(rect), 1);
+                  break;
+                }
+              }
+            }
+            rects.push(rect);
           }
         }
+      }
+      for(i=0; i<rects.length; i++) {
+        rect = rects[i];
+        var width = rect.width * this.tilewidth;
+        var height = rect.height * this.tileheight;
+        var centerX = rect.x + rect.width  / 2;
+        var centerY = rect.y + rect.height / 2
+        this.sprite.body.addRectangle(width, height, 
+              (centerX - this.mapwidth  / 2) * this.tilewidth, 
+              (centerY - this.mapheight / 2) * this.tileheight);
       }
       tile.parent.remove(tile);
       this.dirty = false;

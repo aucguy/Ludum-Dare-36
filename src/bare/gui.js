@@ -1,37 +1,53 @@
 base.registerModule('gui', function() {
   var util = base.importModule('util');
-
+  
+  MOUSE_STATES = {
+    ACTIVE: 0,
+    DISABLED_NOW: 1,
+    DISABLED_ALWAYS: 2
+  };
+  
   var Menu = util.extend(Object, 'Menu', {
     constructor: function Menu(gui, game, onUpdate) {
       this.game = game;
-      this.context = new GuiContext(this);
+      this.guiContext = new GuiContext(this);
       this.gui = gui;
       this.targetCanvas = null;
       this.sprite = null;
       this.canvg = null;
       this.dirty = false;
-      this.create();
+      this.callbacks = {};
+      this.mouseState = MOUSE_STATES.ACTIVE;
+      this.menuClicked = false;
       onUpdate.add(this.update, this);
+      this.create();
     },
 
     create: function create() {
       this.loadMenu(this.gui);
-      var ms = util.getGame().input.mousePointer;
-      this.game.input.onDown.add(function() {
-        var event = new MouseEvent('click', {
-          clientX: ms.clientX,
-          clientY: ms.clientY,
-          button: ms.button
-        });
-        this.targetCanvas.dispatchEvent(event);
-      }, this);
+      this.game.input.onDown.add(this.onClick, this);
     },
-
     update: function update() {
       this.canvg.update();
       this.sprite.setTexture(PIXI.Texture.fromCanvas(this.targetCanvas));
+      if(this.mouseState == MOUSE_STATES.DISABLED_NOW) {
+        this.mouseState = MOUSE_STATES.ACTIVE;
+      }
+      this.menuClicked = false;
     },
-
+    onClick: function onClick(pointer) {
+      if(this.mouseState == MOUSE_STATES.ACTIVE) {
+        this.mouseState = MOUSE_STATES.DISABLED_NOW;
+        var event = new MouseEvent('click', {
+          clientX: pointer.position.x,
+          clientY: pointer.position.y,
+          button: pointer.button
+        });
+        this.targetCanvas.dispatchEvent(event);
+      }
+      this.canvg.dirty = true;
+      this.canvg.update();
+    },
     loadMenu: function loadMenu(newMenu) {
       if(this.canvg) return;
       var svg = util.xmlParser.parseFromString(base.getAsset(newMenu), 'text/xml');
@@ -42,6 +58,7 @@ base.registerModule('gui', function() {
       this.sprite = this.game.add.sprite(0, 0, null);
       this.canvg = canvg(this.targetCanvas, svg, {
         eventCallback: function(event, element) {
+          this.menuClicked = true;
           var id = element.attribute('id').value;
           if(this.callbacks.hasOwnProperty(id)) {
             this.callbacks[id]();
@@ -54,10 +71,8 @@ base.registerModule('gui', function() {
         }.bind(this)
       });
     },
-
     loadCallbacks: function loadCallbacks(svg) {
       var treeWalker = document.createTreeWalker(svg, NodeFilter.SHOW_ELEMENT);
-      this.callbacks = {};
       while(treeWalker.nextNode()) {
         var element = treeWalker.currentNode;
         if(element.hasAttribute('onclick') && element.hasAttribute('id')) {
@@ -67,7 +82,6 @@ base.registerModule('gui', function() {
         }
       }
     },
-
     parseCallback: function parseCallback(callback) {
       var tmp = callback.split(' ');
       var parts = [];
@@ -77,12 +91,12 @@ base.registerModule('gui', function() {
 
       if(!parts[0]) return null;
 
-      if(!(parts[0] in this.context))
+      if(!(parts[0] in this.guiContext))
         throw(new Error("invalid callback '" + callback + "'"));
 
       return function() {
-        if(this.context[parts[0]] instanceof Function) {
-          this.context[parts[0]].apply(this.context, parts.slice(1));
+        if(this.guiContext[parts[0]] instanceof Function) {
+          this.guiContext[parts[0]].apply(this.guiContext, parts.slice(1));
         }
       }.bind(this);
     },

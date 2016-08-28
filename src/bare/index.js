@@ -11,7 +11,9 @@ var base = base || {};
         pixelated: true
       }],
       ['tilemap/test',        'assets/tilemap/test.json',     'json'],
-      ['tilemap/flame',       'assets/tilemap/flame.json',    'json']
+      ['tilemap/flame',       'assets/tilemap/flame.json',    'json'],
+      
+      ['gui/play',            'assets/gui/play.svg',          'text']
     ];
     //#mode dev
     base.loadAssets(assets.concat([
@@ -27,6 +29,7 @@ var base = base || {};
       ['scripts/util',        'src/bare/util.js',             'script'],
       ['scripts/app',         'src/app.js',                   'script'],
       ['scripts/fire',        'src/fire.js',                  'script'],
+      ['scripts/menu',        'src/menu.js',                  'script'],
       ['scripts/common',      'src/common.js',                'script']
     ]));
     //#mode none
