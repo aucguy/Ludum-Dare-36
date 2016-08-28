@@ -17,6 +17,7 @@ var base = base || {};
       }],
       ['tilemap/test',        'assets/tilemap/test.json',     'json'],
       ['tilemap/flame',       'assets/tilemap/flame.json',    'json'],
+      ['tilemap/hotdog',      'assets/tilemap/hotdog.json',   'json'],
       ['tilemap/terrain',     'assets/tilemap/terrain.json',  'json'],
       
       ['gui/play',            'assets/gui/play.svg',          'text']

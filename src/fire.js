@@ -6,6 +6,8 @@ base.registerModule('fire', function() {
     constructor: function Fire() {
       this.constructor$PlayContext();
       this.burnables = [];
+      this.selectionConstraint = null;
+      this.selectionBurnable = null;
       this.group = this.game.add.group(undefined, 'fire');
       this.terrain = this.create(Terrain, this.game.width / 2, this.game.height / 2, 'tilemap/terrain');
       this.addBurnable(this.create(Burnable, 200, 200, 'tilemap/test'));
@@ -25,7 +27,15 @@ base.registerModule('fire', function() {
           }
         }
       }, this);
-      this.game.input.onUp.add(this.ungrab, this);
+      this.game.input.onUp.add(function(pointer) {
+        this.top.playMenu.canvg.Mouse.events.push({ type: 'onrelease', x: pointer.position.x, y: pointer.position.y,
+					run: function(e) {},
+          burnable: this.selectionBurnable
+				});
+        this.ungrab();
+      }, this);
+      
+      this.onUpdate.add(this.update, this);
     },
     update: function update() {
       var deadChildren = this.burnables.filter(function(burnable) {
@@ -52,11 +62,13 @@ base.registerModule('fire', function() {
       this.ungrab();
       var local = common.localizePoint(body, position, this.game);
       this.selectionConstraint = this.game.physics.p2.createLockConstraint(this.mouseBody, body, local);
+      this.selectionBurnable = body.burnable || body.data.burnable;
     },
     ungrab: function ungrab() {
       if(this.selectionConstraint) {
         this.game.physics.p2.removeConstraint(this.selectionConstraint);
         this.selectionConstraint = null;
+        this.selectionBurnable = null;
       }
     }
   });
@@ -173,6 +185,8 @@ base.registerModule('fire', function() {
     constructor: function Burnable(x, y, tilemapKey) {
       this.constructor$Physical(x, y, tilemapKey);
       this.goesOut = true;
+      this.catchesFire = true;
+      this.cooks = false;
       this.sprite.body.data.burnable = this;
       this.onUpdate.add(this.update, this);
     },
@@ -181,7 +195,7 @@ base.registerModule('fire', function() {
         var pos = new Phaser.Point(this.game.rnd.integerInRange(0, this.mapwidth  - 1), 
                                    this.game.rnd.integerInRange(0, this.mapheight - 1));
         var tile = this.getTile(pos.x, pos.y);
-        if(tile >= 3) {
+        if(tile >= 3 && this.catchesFire) {
           if(this.game.rnd.frac() < 0.2) { //burn more if already burning
             tile += 1;
             if(tile == 17) {
@@ -216,8 +230,8 @@ base.registerModule('fire', function() {
                 local = [Math.floor((local[0] + burnable.texture.width  / 2) / burnable.tilewidth ), 
                          Math.floor((local[1] + burnable.texture.height / 2) / burnable.tileheight)];
                 var value = burnable.getTile(local[0], local[1]);
-                if(value == 2) {
-                  burnable.setTile(local[0], local[1], 3);
+                if(value == 2 || burnable.cooks) {
+                  burnable.setTile(local[0], local[1], value + 1);
                 }
               }
             }
@@ -228,7 +242,38 @@ base.registerModule('fire', function() {
     },
     kill: function kill() {
       this.onUpdate.remove(this.update, this);
-      this.game.world.remove(this.sprite);
+      this.sprite.kill();
+    },
+    value: function value() {
+      return 0;
+    },
+    cost: function cost() {
+      return 2;
+    }
+  });
+  
+  var MIN_COOK = 5;
+  var MAX_COOK = 10;
+  
+  var Food = util.extend(Burnable, 'Food', {
+    constructor: function(x, y, tilemapKey) {
+      this.constructor$Burnable(x, y, tilemapKey);
+      this.goesOut = false;
+      this.catchesFire = false;
+      this.cooks = true;
+    },
+    value: function value() {
+      var value = 0;
+      for(var y=0; y<this.mapheight; y++) {
+        for(var x=0; x<this.mapwidth; x++) {
+          var tile = this.getTile(x, y);
+          console.log(tile);
+          if(MIN_COOK < tile && tile < MAX_COOK) {
+            value++;
+          }
+        }
+      }
+      return value;
     }
   });
   
@@ -249,6 +294,7 @@ base.registerModule('fire', function() {
   return {
     Fire: Fire,
     Burnable: Burnable,
+    Food: Food,
     Flame: Flame
   }
 });

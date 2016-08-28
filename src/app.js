@@ -33,6 +33,7 @@ base.registerModule('app', function() {
       this.top = this;
       this.fire = null;
       this.playMenu = null;
+      this.money = 100;
       this.onUpdate = new Phaser.Signal();
     },
     create: function create() {

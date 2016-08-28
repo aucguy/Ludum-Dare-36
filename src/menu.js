@@ -13,7 +13,7 @@ base.registerModule('menu', function() {
         var out = true;
         var transformBase = null;
         var first = true;
-        this.callbacks.spawnMenuInOut = function() {
+        this.clickCallbacks.spawnMenuInOut = function() {
           var spawnMenu = this.getElementById('spawnMenu');
           var spawnMenuInOut = this.getElementById('spawnMenuInOut');
           var transform = spawnMenu.attribute('transform', true);
@@ -29,18 +29,24 @@ base.registerModule('menu', function() {
         }.bind(this);
       }.bind(this))();
       
-      for(var i=0; i<2; i++) {
-        this.callbacks['wood' + i] = (function() {
-          var clazz;
+      for(var i=0; i<3; i++) {
+        this.clickCallbacks[['wood0', 'wood1', 'food0'][i]] = (function() {
+          var clazz, tilemapKey;
           if(i == 0) {
             clazz = fire.Burnable;
+            tilemapKey = 'tilemap/test';
           } else if(i == 1) {
             clazz = fire.Flame;
+            tilemapKey = undefined;
+          } else if(i == 2) {
+            clazz = fire.Food;
+            tilemapKey = 'tilemap/hotdog';
           }
           return function() {
             var x = this.game.input.position.x;
             var y = this.game.input.position.y;
-            var burnable = this.fire.create(clazz, x, y, 'tilemap/test');
+            var burnable = this.fire.create(clazz, x, y, tilemapKey);
+            this.top.money -= burnable.cost();
             this.fire.addBurnable(burnable);
             this.fire.grab(burnable.sprite.body, this.game.input.position);
           }.bind(this);
@@ -48,7 +54,7 @@ base.registerModule('menu', function() {
       }
       
       var createTab = (function (self, other) {
-        this.callbacks[self + 'Tab'] = (function() {
+        this.clickCallbacks[self + 'Tab'] = (function() {
           var selfGroup = this.getElementById(self + 'Group');
           var otherGroup = this.getElementById(other + 'Group');
           selfGroup.attribute('visibility', true).value = 'visible';
@@ -58,9 +64,21 @@ base.registerModule('menu', function() {
       }).bind(this);
       createTab('food', 'wood');
       createTab('wood', 'food');
-      this.callbacks.woodTab();
+      this.clickCallbacks.woodTab();
+      
+      this.releaseCallbacks.output = function(event) {
+        if(event.burnable) {
+          this.top.money += event.burnable.value();
+          event.burnable.dead = true;
+        }
+      }.bind(this);
     },
     update: function update() {
+      var money = this.getElementById('money');
+      if(money.children[0].children[0].text != '' + this.top.money) {
+        money.children[0].children[0].text = '' + this.top.money;
+        this.dirty = true;
+      }
       this.update$Menu();
     }
   });

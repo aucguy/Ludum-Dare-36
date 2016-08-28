@@ -16,7 +16,8 @@ base.registerModule('gui', function() {
       this.sprite = null;
       this.canvg = null;
       this.dirty = false;
-      this.callbacks = {};
+      this.clickCallbacks = {};
+      this.releaseCallbacks = {};
       this.mouseState = MOUSE_STATES.ACTIVE;
       this.menuClicked = false;
       onUpdate.add(this.update, this);
@@ -60,8 +61,10 @@ base.registerModule('gui', function() {
         eventCallback: function(event, element) {
           this.menuClicked = true;
           var id = element.attribute('id').value;
-          if(this.callbacks.hasOwnProperty(id)) {
-            this.callbacks[id]();
+          if(event.type == 'onclick' && this.clickCallbacks.hasOwnProperty(id)) {
+            this.clickCallbacks[id](event, element);
+          } else if(event.type == 'onrelease' && this.releaseCallbacks.hasOwnProperty(id)) {
+            this.releaseCallbacks[id](event, element);
           }
         }.bind(this),
         forceRedraw: function() {
@@ -78,7 +81,7 @@ base.registerModule('gui', function() {
         if(element.hasAttribute('onclick') && element.hasAttribute('id')) {
           var onclick = this.parseCallback(element.getAttribute('onclick'));
           var id = element.getAttribute('id');
-          if(onclick) this.callbacks[id] = onclick;
+          if(onclick) this.clickCallbacks[id] = onclick;
         }
       }
     },
