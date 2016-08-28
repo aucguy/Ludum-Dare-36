@@ -7,8 +7,9 @@ base.registerModule('fire', function() {
       this.constructor$PlayContext();
       this.burnables = [];
       this.group = this.game.add.group(undefined, 'fire');
-      this.burnables.push(this.create(Burnable, 'tilemap/test'));
-      this.burnables.push(this.create(Flame));
+      this.terrain = this.create(Terrain, this.game.width / 2, this.game.height / 2, 'tilemap/terrain');
+      this.addBurnable(this.create(Burnable, 200, 200, 'tilemap/test'));
+      this.addBurnable(this.create(Flame, 300, 300));
       this.mouseBody = this.game.physics.p2.createBody(0, 0, 0, true);
       
       this.game.input.addMoveCallback(function(pointer) {
@@ -20,18 +21,11 @@ base.registerModule('fire', function() {
         if(!this.top.playMenu.menuClicked) {
           var bodies = this.collideBurnables(pointer.position);
           if(bodies.length > 0) {
-            var body = bodies[0];
-            var local = [0, 0];
-            body.toLocalFrame(local, [this.game.physics.p2.pxmi(pointer.position.x), this.game.physics.p2.pxmi(pointer.position.y)]);
-            local = [this.game.physics.p2.mpxi(local[0]), this.game.physics.p2.mpxi(local[1])];
-            this.selectionConstraint = this.game.physics.p2.createLockConstraint(this.mouseBody, body, local);
+            this.grab(bodies[0], pointer.position);
           }
         }
       }, this);
-      this.game.input.onUp.add(function() {
-        this.game.physics.p2.removeConstraint(this.selectionConstraint);
-        this.selectionConstraint = null;
-      }, this);
+      this.game.input.onUp.add(this.ungrab, this);
     },
     update: function update() {
       var deadChildren = this.burnables.filter(function(burnable) {
@@ -50,16 +44,27 @@ base.registerModule('fire', function() {
     collideBurnables: function getBurnableCollisions(point) {
       return this.game.physics.p2.hitTest(point, this.getBurnableBodies());
     },
-    addBurnable: function addBurnable() {
-      this.burnables.push(this.create.apply(this, arguments));
+    addBurnable: function addBurnable(burnable) {
+      this.burnables.push(burnable);
+    },
+    //from http://phaser.io/examples/v2/p2-physics/pick-up-object
+    grab: function grab(body, position) {
+      this.ungrab();
+      var local = common.localizePoint(body, position, this.game);
+      this.selectionConstraint = this.game.physics.p2.createLockConstraint(this.mouseBody, body, local);
+    },
+    ungrab: function ungrab() {
+      if(this.selectionConstraint) {
+        this.game.physics.p2.removeConstraint(this.selectionConstraint);
+        this.selectionConstraint = null;
+      }
     }
   });
   
-  var Burnable = util.extend(common.PlayContext, 'Burnable', {
-    constructor: function Burnable(tilemapKey) {
+  var Physical = util.extend(common.PlayContext, 'Physical', {
+    constructor: function Physical(x, y, tilemapKey, parent) {
       this.constructor$PlayContext();
       this.dirty = false;
-      this.goesOut = true;
       this.dead = false;
       
       var tilemap = this.top.cache.getJSON(tilemapKey);
@@ -72,11 +77,9 @@ base.registerModule('fire', function() {
       this.texture = this.game.add.renderTexture(tilemap.width * tilemap.tilewidth, tilemap.height * tilemap.tileheight);
       this.sprite = this.game.add.sprite(0, 0, this.texture, undefined, this.parent.group);
       this.game.physics.p2.enable(this.sprite);
-      this.sprite.body.data.burnable = this;
       
       this.refresh(true);
-      this.sprite.body.reset(200, 200);
-      this.onUpdate.add(this.update, this);
+      this.sprite.body.reset(x, y);
     },
     getTile: function getTile(x, y, value) {
       return this.tilemapData[y * this.mapwidth + x];
@@ -164,6 +167,15 @@ base.registerModule('fire', function() {
       tile.parent.remove(tile);
       this.dirty = false;
     },
+  })
+  
+  var Burnable = util.extend(Physical, 'Burnable', {
+    constructor: function Burnable(x, y, tilemapKey) {
+      this.constructor$Physical(x, y, tilemapKey);
+      this.goesOut = true;
+      this.sprite.body.data.burnable = this;
+      this.onUpdate.add(this.update, this);
+    },
     update: function update() {
       for(var i=0; i<3; i++) {
         var pos = new Phaser.Point(this.game.rnd.integerInRange(0, this.mapwidth  - 1), 
@@ -200,10 +212,7 @@ base.registerModule('fire', function() {
               if(bodies.length > 0 && bodies[0].burnable) {
                 var body = bodies[0];
                 var burnable = body.burnable;
-                var local = [0, 0];
-                body.toLocalFrame(local, [this.game.physics.p2.pxmi(point.x), this.game.physics.p2.pxmi(point.y)]);
-                local = [this.game.physics.p2.mpxi(local[0]),
-                         this.game.physics.p2.mpxi(local[1])];
+                var local = common.localizePoint(body, point, this.game);
                 local = [Math.floor((local[0] + burnable.texture.width  / 2) / burnable.tilewidth ), 
                          Math.floor((local[1] + burnable.texture.height / 2) / burnable.tileheight)];
                 var value = burnable.getTile(local[0], local[1]);
@@ -224,9 +233,16 @@ base.registerModule('fire', function() {
   });
   
   var Flame = util.extend(Burnable, 'Flame', {
-    constructor: function Flame() {
-      this.constructor$Burnable('tilemap/flame');
+    constructor: function Flame(x, y) {
+      this.constructor$Burnable(x, y, 'tilemap/flame');
       this.goesOut = false;
+    }
+  });
+  
+  var Terrain = util.extend(Physical, 'Terrain', {
+    constructor: function Terrain(x, y, tilemapKey) {
+      this.constructor$Physical(x, y, tilemapKey);
+      this.sprite.body.kinematic = true;
     }
   });
   

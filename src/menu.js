@@ -29,9 +29,36 @@ base.registerModule('menu', function() {
         }.bind(this);
       }.bind(this))();
       
-      this.callbacks.wood1 = function() {
-        this.fire.addBurnable(fire.Burnable, 'tilemap/test');
-      }.bind(this);
+      for(var i=0; i<2; i++) {
+        this.callbacks['wood' + i] = (function() {
+          var clazz;
+          if(i == 0) {
+            clazz = fire.Burnable;
+          } else if(i == 1) {
+            clazz = fire.Flame;
+          }
+          return function() {
+            var x = this.game.input.position.x;
+            var y = this.game.input.position.y;
+            var burnable = this.fire.create(clazz, x, y, 'tilemap/test');
+            this.fire.addBurnable(burnable);
+            this.fire.grab(burnable.sprite.body, this.game.input.position);
+          }.bind(this);
+        }.bind(this))();
+      }
+      
+      var createTab = (function (self, other) {
+        this.callbacks[self + 'Tab'] = (function() {
+          var selfGroup = this.getElementById(self + 'Group');
+          var otherGroup = this.getElementById(other + 'Group');
+          selfGroup.attribute('visibility', true).value = 'visible';
+          otherGroup.attribute('visibility', true).value = 'hidden';
+          this.dirty = true;
+        }).bind(this);
+      }).bind(this);
+      createTab('food', 'wood');
+      createTab('wood', 'food');
+      this.callbacks.woodTab();
     },
     update: function update() {
       this.update$Menu();
