@@ -45,6 +45,9 @@ base.registerModule('app', function() {
     },
     update: function update() {
       this.onUpdate.dispatch();
+    },
+    shutdown: function shutdown() {
+      util.clearBitmapCache();
     }
   });
 

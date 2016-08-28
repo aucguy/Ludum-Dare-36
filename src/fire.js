@@ -12,7 +12,7 @@ base.registerModule('fire', function() {
       this.flameTexture1 = this.game.add.renderTexture(this.game.width, this.game.height);
       this.flameTexture2 = this.game.add.renderTexture(this.game.width, this.game.height);
       this.flameSprite = this.game.add.sprite(0, 0, this.flameTexture1);
-      this.flameSprite.alpha = 0.9;
+      this.flameSprite.alpha = 0.5;
       
       this.group = this.game.add.group(undefined, 'fire');
       //this.terrain = this.create(Terrain, this.game.width / 2, this.game.height / 2, 'tilemap/terrain');
@@ -54,13 +54,24 @@ base.registerModule('fire', function() {
         this.burnables.splice(this.burnables.indexOf(child), 1);
       }
       
-      var matrix = new Phaser.Matrix(1, 0, 0, 0.9, 0, -1);
+      var radius = 5;
+      var matrix = new Phaser.Matrix(1, 0, 0, 0.9, 0, -10);
       var currentTexture = this.flameSprite.texture;
       var otherTexture = currentTexture == this.flameTexture1 ? this.flameTexture2 : this.flameTexture1;
       for(var i=0; i<this.burnables.length; i++) {
         var burnable = this.burnables[i];
         if(burnable.catchesFire) {
-          otherTexture.renderXY(burnable.sprite, burnable.sprite.position.x, burnable.sprite.position.y);
+          var width = burnable.flameTexture.width;
+          var height = burnable.flameTexture.height;
+          var originalCanvas = burnable.flameTexture.getCanvas();
+          var blurredContext = util.createCanvas(width + 2 * radius, height + 2 * radius).getContext('2d');
+          blurredContext.drawImage(originalCanvas, radius, radius);
+          stackBlur.canvasRGBA(blurredContext, 0, 0, width, height, radius);
+          var blurredTexture = PIXI.Texture.fromCanvas(blurredContext.canvas);
+          var textureHolder = this.game.add.sprite(0, 0, blurredTexture);
+          otherTexture.renderXY(textureHolder, burnable.sprite.position.x - width  / 2,
+                                               burnable.sprite.position.y - height / 2);
+          textureHolder.destroy();
         }
       }
       otherTexture.render(this.flameSprite, matrix);
@@ -110,6 +121,7 @@ base.registerModule('fire', function() {
       this.templateImage = this.top.cache.getImage(imageKey);
       
       this.texture = util.createBitmap(this.game, tilemap.width * tilemap.tilewidth, tilemap.height * tilemap.tileheight);
+      this.flameTexture = this.game.add.renderTexture(tilemap.width * tilemap.tilewidth, tilemap.height * tilemap.tileheight);
       this.sprite = this.game.add.sprite(0, 0, this.texture, undefined, parent);
       this.game.physics.p2.enable(this.sprite);
       this.sprite.body.debug = true;
@@ -129,10 +141,11 @@ base.registerModule('fire', function() {
     refresh: function refresh(force) {
       if(!force && !this.dirty) return;
       
-      this.texture.ctx.drawImage(this.templateImage, 0, 0);
-      this.texture.dirty = true;
-      this.sprite.body.clearShapes();
       this.dead = true;
+      this.sprite.body.clearShapes();
+      this.texture.ctx.drawImage(this.templateImage, 0, 0);
+      var tile = this.game.make.sprite(0, 0, 'image/fireOverlay', 1);
+      this.flameTexture.clear();
       
       var i = 0;
       var rects = [];
@@ -141,6 +154,9 @@ base.registerModule('fire', function() {
           var index = this.tilemapData[i++];
           if(index) {
             this.dead = false;
+            
+            tile.frame = index - 1;
+            this.flameTexture.renderXY(tile, x * this.tilewidth, y * this.tileheight, false);
             
             var rect = {
               x: x,
