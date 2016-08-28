@@ -46,9 +46,14 @@ base.registerModule('menu', function() {
             var x = this.game.input.position.x;
             var y = this.game.input.position.y;
             var burnable = this.fire.create(clazz, x, y, tilemapKey);
-            this.top.money -= burnable.cost();
+            var cost = burnable.cost();
             this.fire.addBurnable(burnable);
-            this.fire.grab(burnable.sprite.body, this.game.input.position);
+            if(this.top.money >= cost) {
+              this.top.money -= cost;
+              this.fire.grab(burnable.sprite.body, this.game.input.position);
+            } else {
+              burnable.dead = true;
+            }
           }.bind(this);
         }.bind(this))();
       }

@@ -15,6 +15,8 @@ var base = base || {};
         frameHeight: 16,
         pixelated: true
       }],
+      ['image/fireParticle',  'assets/image/fireParticle.png','image'],
+      
       ['tilemap/test',        'assets/tilemap/test.json',     'json'],
       ['tilemap/flame',       'assets/tilemap/flame.json',    'json'],
       ['tilemap/hotdog',      'assets/tilemap/hotdog.json',   'json'],

@@ -8,10 +8,14 @@ base.registerModule('fire', function() {
       this.burnables = [];
       this.selectionConstraint = null;
       this.selectionBurnable = null;
+      
+      this.flameTexture1 = this.game.add.renderTexture(this.game.width, this.game.height);
+      this.flameTexture2 = this.game.add.renderTexture(this.game.width, this.game.height);
+      this.flameSprite = this.game.add.sprite(0, 0, this.flameTexture1);
+      this.flameSprite.alpha = 0.9;
+      
       this.group = this.game.add.group(undefined, 'fire');
       this.terrain = this.create(Terrain, this.game.width / 2, this.game.height / 2, 'tilemap/terrain');
-      this.addBurnable(this.create(Burnable, 200, 200, 'tilemap/test'));
-      this.addBurnable(this.create(Flame, 300, 300));
       this.mouseBody = this.game.physics.p2.createBody(0, 0, 0, true);
       
       this.game.input.addMoveCallback(function(pointer) {
@@ -42,9 +46,26 @@ base.registerModule('fire', function() {
         return burnable.dead;
       });
       for(var i=0; i<deadChildren.length; i++) {
-        deadChildren[i].kill();
-        this.burnables.splice(this.burnables.indexOf(deadChildren[i]), 1);
+        var child = deadChildren[i];
+        if(child == this.selectionBurnable) {
+          this.ungrab();
+        }
+        child.kill();
+        this.burnables.splice(this.burnables.indexOf(child), 1);
       }
+      
+      var matrix = new Phaser.Matrix(1, 0, 0, 0.9, 0, -1);
+      var currentTexture = this.flameSprite.texture;
+      var otherTexture = currentTexture == this.flameTexture1 ? this.flameTexture2 : this.flameTexture1;
+      for(var i=0; i<this.burnables.length; i++) {
+        var burnable = this.burnables[i];
+        if(burnable.catchesFire) {
+          otherTexture.renderXY(burnable.sprite, burnable.sprite.position.x, burnable.sprite.position.y);
+        }
+      }
+      otherTexture.render(this.flameSprite, matrix);
+      currentTexture.clear();
+      this.flameSprite.setTexture(otherTexture);
     },
     getBurnableBodies: function getBurnableBodies() {
       return this.burnables.map(function(burnable) {
@@ -75,6 +96,7 @@ base.registerModule('fire', function() {
   
   var Physical = util.extend(common.PlayContext, 'Physical', {
     constructor: function Physical(x, y, tilemapKey, parent) {
+      parent = parent || this.parent.group;
       this.constructor$PlayContext();
       this.dirty = false;
       this.dead = false;
@@ -87,7 +109,7 @@ base.registerModule('fire', function() {
       this.tilemapData = new Uint8Array(tilemap.layers[0].data);
       
       this.texture = this.game.add.renderTexture(tilemap.width * tilemap.tilewidth, tilemap.height * tilemap.tileheight);
-      this.sprite = this.game.add.sprite(0, 0, this.texture, undefined, this.parent.group);
+      this.sprite = this.game.add.sprite(0, 0, this.texture, undefined, parent);
       this.game.physics.p2.enable(this.sprite);
       
       this.refresh(true);
@@ -191,22 +213,24 @@ base.registerModule('fire', function() {
       this.onUpdate.add(this.update, this);
     },
     update: function update() {
-      for(var i=0; i<3; i++) {
-        var pos = new Phaser.Point(this.game.rnd.integerInRange(0, this.mapwidth  - 1), 
-                                   this.game.rnd.integerInRange(0, this.mapheight - 1));
-        var tile = this.getTile(pos.x, pos.y);
-        if(tile >= 3 && this.catchesFire) {
-          if(this.game.rnd.frac() < 0.2) { //burn more if already burning
-            tile += 1;
-            if(tile == 17) {
-              if(this.goesOut) {
-                tile = 0;
-              } else {
-                tile = 16;
+      if(this.catchesFire) {
+        for(var i=0; i<3; i++) {
+          var pos = new Phaser.Point(this.game.rnd.integerInRange(0, this.mapwidth  - 1), 
+                                     this.game.rnd.integerInRange(0, this.mapheight - 1));
+          var tile = this.getTile(pos.x, pos.y);
+          if(tile >= 3) {
+            if(this.game.rnd.frac() < 0.2) { //burn more if already burning
+              tile += 1;
+              if(tile == 17) {
+                if(this.goesOut) {
+                  tile = 0;
+                } else {
+                  tile = 16;
+                }
               }
+              this.setTile(pos.x, pos.y, tile);
             }
-            this.setTile(pos.x, pos.y, tile);
-            
+              
             if(this.game.rnd.frac() < 0.9) { //spread not non-burning tile
               var otherPos = Phaser.Point.add(pos, this.game.rnd.pick(common.DIRECTIONS));
               var otherTile = this.getTile(otherPos.x, otherPos.y);
@@ -214,11 +238,11 @@ base.registerModule('fire', function() {
                 this.setTile(otherPos.x, otherPos.y, 3);
               }
             }
-            
+            var point;
             if(this.game.rnd.frac() < 0.1) { //spread to other burnables
-              var point = pos
+              point = pos
                 .multiply(this.tilewidth, this.tileheight)
-                .rotate(0, 0, this.sprite.body.angle)
+                .rotate(0, 0, this.sprite.body.rotation)
                 .add(this.sprite.position.x, this.sprite.position.y)
                 .add(this.game.rnd.integerInRange(-10, 10), this.game.rnd.integerInRange(0, -50));
               
@@ -237,8 +261,8 @@ base.registerModule('fire', function() {
             }
           }
         }
+        this.refresh();
       }
-      this.refresh();
     },
     kill: function kill() {
       this.onUpdate.remove(this.update, this);
@@ -286,7 +310,7 @@ base.registerModule('fire', function() {
   
   var Terrain = util.extend(Physical, 'Terrain', {
     constructor: function Terrain(x, y, tilemapKey) {
-      this.constructor$Physical(x, y, tilemapKey);
+      this.constructor$Physical(x, y, tilemapKey, this.game.world);
       this.sprite.body.kinematic = true;
     }
   });
