@@ -5,25 +5,25 @@ var base = base || {};
 
   base.indexFunc = function indexFunc(state) {
     var assets = [
-      ['image/fireOverlay',   'assets/image/fireOverlay.png', 'spritesheet', {
+      ['image/fireOverlay',   'assets/image/fireOverlay.png', 'image'],
+      ['image/terrain',       'assets/image/terrain.png',     'image'],
+      ['image/burn',          'assets/image/burn.png',        'spritesheet', {
         frameWidth: 16,
         frameHeight: 16,
         pixelated: true
       }],
-      ['image/terrain',       'assets/image/terrain.png',     'spritesheet', {
-        frameWidth: 16,
-        frameHeight: 16,
-        pixelated: true
-      }],
-      ['image/fireParticle',  'assets/image/fireParticle.png','image'],
       ['image/log',           'assets/image/log.png',         'image'],
+      ['image/match',         'assets/image/match.png',       'image'],
+      ['image/hotdog',        'assets/image/hotdog.png',      'image'],
+      ['image/terrain',       'assets/image/terrain.png',     'image'],
       
-      ['tilemap/test',        'assets/tilemap/test.json',     'json'],
-      ['tilemap/flame',       'assets/tilemap/flame.json',    'json'],
+      ['tilemap/log',         'assets/tilemap/log.json',      'json'],
+      ['tilemap/match',       'assets/tilemap/match.json',    'json'],
       ['tilemap/hotdog',      'assets/tilemap/hotdog.json',   'json'],
       ['tilemap/terrain',     'assets/tilemap/terrain.json',  'json'],
       
-      ['gui/play',            'assets/gui/play.svg',          'text']
+      ['gui/play',            'assets/gui/play.svg',          'text'],
+      ['data/fire',           'assets/data/fire.json',        'text']
     ];
     //#mode dev
     base.loadAssets(assets.concat([

@@ -19,7 +19,7 @@
         {
          "columns":4,
          "firstgid":1,
-         "image":"..\/image\/terrain.png",
+         "image":"..\/image\/terrainTileset.png",
          "imageheight":64,
          "imagewidth":64,
          "margin":0,

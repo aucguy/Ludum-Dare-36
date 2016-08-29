@@ -29,25 +29,24 @@ base.registerModule('menu', function() {
         }.bind(this);
       }.bind(this))();
       
+      var itemData = JSON.parse(base.getAsset('data/fire'));
       for(var i=0; i<3; i++) {
         this.clickCallbacks[['wood0', 'wood1', 'food0'][i]] = (function() {
-          var clazz, tilemapKey, imageKey;
+          var clazz, data;
           if(i == 0) {
             clazz = fire.Burnable;
-            tilemapKey = 'tilemap/test';
-            imageKey = 'image/log';
+            data = itemData.wood[0]
           } else if(i == 1) {
-            clazz = fire.Flame;
-            tilemapKey = undefined;
-            imageKey = undefined;
+            clazz = fire.Burnable;
+            data = itemData.wood[1];
           } else if(i == 2) {
             clazz = fire.Food;
-            tilemapKey = 'tilemap/hotdog';
+            data = itemData.food[0];
           }
           return function() {
             var x = this.game.input.position.x;
             var y = this.game.input.position.y;
-            var burnable = this.fire.create(clazz, x, y, tilemapKey, imageKey);
+            var burnable = this.fire.create(clazz, x, y, data);
             var cost = burnable.cost();
             this.fire.addBurnable(burnable);
             if(this.top.money >= cost) {
@@ -82,8 +81,8 @@ base.registerModule('menu', function() {
     },
     update: function update() {
       var money = this.getElementById('money');
-      if(money.children[0].children[0].text != '' + this.top.money) {
-        money.children[0].children[0].text = '' + this.top.money;
+      if(money.children[0].children[0].text != '$' + this.top.money) {
+        money.children[0].children[0].text = '$' + this.top.money;
         this.dirty = true;
       }
       this.update$Menu();

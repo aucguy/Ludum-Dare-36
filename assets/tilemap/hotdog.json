@@ -1,13 +1,13 @@
 { "height":2,
  "layers":[
         {
-         "data":[2, 2, 2, 2, 2, 2, 2, 2, 2, 2],
+         "data":[2, 2, 2, 2, 2, 2, 2, 2],
          "height":2,
          "name":"Tile Layer 1",
          "opacity":1,
          "type":"tilelayer",
          "visible":true,
-         "width":5,
+         "width":4,
          "x":0,
          "y":0
         }],
@@ -17,19 +17,19 @@
  "tileheight":16,
  "tilesets":[
         {
-         "columns":4,
+         "columns":1,
          "firstgid":1,
          "image":"..\/image\/fireOverlay.png",
-         "imageheight":64,
-         "imagewidth":64,
+         "imageheight":24,
+         "imagewidth":24,
          "margin":0,
          "name":"fireOverlay",
          "spacing":0,
-         "tilecount":16,
+         "tilecount":2,
          "tileheight":16,
          "tilewidth":16
         }],
  "tilewidth":16,
  "version":1,
- "width":5
+ "width":4
 }
