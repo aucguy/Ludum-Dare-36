@@ -34,11 +34,6 @@ base.registerModule('main', function() {
   });
   Main.instance = null;
 
-  function onError() {
-    var loadScreen = document.getElementById('loadScreen');
-    loadScreen.parentNode.removeChild(loadScreen);
-  }
-
   /**
    * intial state used to inject assets
    */

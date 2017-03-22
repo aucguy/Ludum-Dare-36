@@ -26,7 +26,7 @@ base.registerModule('app', function() {
     }
   };
   
-  var PlayState = util.extend(common.PlayContext, 'TestState', {
+  var PlayState = util.extend(common.PlayContext, 'PlayState', {
     constructor: function PlayState(game) {
       this.constructor$PlayContext();
       this.game = game;
